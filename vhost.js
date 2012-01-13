@@ -6,7 +6,7 @@ exports.vhost = {
 		//train
 		'^\\/app\\/bp\\/css\\/train(.*)		/net_course/style_bp/css/train$1',
 		'^\\/app\\/bp\\/js\\/train(.*)		/net_course/style_bp/js/train$1',
-		//301
-		'^(.*)$								http://10.20.136.169$1 [301]'
+		//302
+		'^(.*)$								http://10.20.136.169$1 302'
 	]
 }

@@ -1,10 +1,10 @@
-var util = require('util');
-var http = require('http');
-var fs = require('fs');
-var url = require('url');
-var path = require('path');
-var net = require('net');
+var Util = require('util');
+var Http = require('http');
+var Fs = require('fs');
+var Url = require('url');
+var Path = require('path');
 
+var DEV = process.argv.indexOf('-dev') >= 0 ? true : false;
 var vhost = require('./vhost').vhost;
 var rrs = vhost.RewriteRule;
 var wwwroot = vhost.DocumentRoot || __dirname;
@@ -12,10 +12,9 @@ var config = require('./config');
 var mime = require("./mime").types;
 var PORT = 80;
 
-var server = http.createServer(function(request, response){
+var server = Http.createServer(function(request, response){
 	//console.log(request);
-	var uri = url.parse(request.url).pathname;
-	var rewriteFlag = 'LOCAL';
+	var uri = Url.parse(request.url).pathname;
 	//url rewrite
 	var rule, urlRule, reurlRule, flag;
 	
@@ -30,15 +29,11 @@ var server = http.createServer(function(request, response){
 				uri = request.url.replace(urlRule, reurlRule);
 				var pathname = uri;
 				pathname = pathname.replace(/\.\./g, '');
-				returnNetFile(request, response, pathname);
+				returnNetFile(request, response, pathname, flag);
 			}else{								//rewrite 到本地文件
-				console.log(uri)
 				uri = uri.replace(urlRule, reurlRule);
-				console.log(uri)
 				var pathname = wwwroot + uri;
-				console.log(pathname)
-				pathname = path.normalize(pathname.replace(/\.\./g, ''));
-				console.log(pathname)
+				pathname = Path.normalize(pathname.replace(/\.\./g, ''));
 				returnLocalFile(request, response, pathname);
 			}
 			break;
@@ -47,17 +42,25 @@ var server = http.createServer(function(request, response){
 });
 server.listen(PORT);
 
-function returnNetFile(request, response, pathname){
+function returnNetFile(request, response, pathname, flag){
 	//var res = /http:\/\/(.*?)(\/.*)/.exec(pathname);
-	response.writeHead(301, {
-		'Location':pathname
-	});
-	console.log(301, pathname);
-	response.end();
+	if(flag == 301 || flag == 302){
+		response.writeHead(flag, {
+			'Location':pathname
+		});
+		console.log(flag, pathname);
+		response.end();
+	}else{
+		response.writeHead(404,{
+			'Content-Type':'text/plain'
+		});
+		response.write("404");
+		response.end();
+	}
 }
 
 function returnLocalFile(request, response, pathname){
-	path.exists(pathname, function(exists){
+	Path.exists(pathname, function(exists){
 		if(!exists){
 			response.writeHead(404,{
 				'Content-Type':'text/plain'
@@ -66,7 +69,7 @@ function returnLocalFile(request, response, pathname){
 			response.write("404");
 			response.end();
 		}else{
-			fs.readFile(pathname, "binary", function(err, file){
+			Fs.readFile(pathname, "binary", function(err, file){
 				if(err){
 					response.writeHead(500, {
 						'Content-Type':'text/plain'
@@ -74,12 +77,12 @@ function returnLocalFile(request, response, pathname){
 					console.log(500, pathname);
 					response.write(err);
 				}else{
-					var ext = path.extname(pathname);
+					var ext = Path.extname(pathname);
 					ext = ext ? ext.slice(1) : 'unknown';
 					//根据文件后缀返回不同的content-type
 					response.setHeader('Content-Type', mime[ext] || 'text/plain');
 					
-					fs.stat(pathname, function(err, stat){
+					Fs.stat(pathname, function(err, stat){
 						var lastModified = stat.mtime.toUTCString();
 						var ifModifiedSince = "If-Modified-Since".toLowerCase();
 						response.setHeader("Last-Modified", lastModified);
@@ -95,7 +98,7 @@ function returnLocalFile(request, response, pathname){
 							response.writeHead(304, "Not Modified");
 							response.end();
 						} else {
-							fs.readFile(pathname, "binary", function(err, file) {
+							Fs.readFile(pathname, "binary", function(err, file) {
 								if (err) {
 									response.writeHead(500, "Internal Server Error", {'Content-Type': 'text/plain'});
 									console.log(500, pathname);
@@ -115,4 +118,4 @@ function returnLocalFile(request, response, pathname){
 	});
 }
 
-util.puts(wwwroot+' Server running...');
+Util.puts((DEV ? 'DEV MODE ' : '') + wwwroot+' Server running...');

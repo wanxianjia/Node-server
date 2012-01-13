@@ -1,2 +1,2 @@
-var sys = require("sys");
-sys.puts("hello,world");
+var path = require("path");
+console.log(process.argv);
