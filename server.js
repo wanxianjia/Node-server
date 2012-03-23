@@ -5,12 +5,15 @@ var Url = require('url');
 var Path = require('path');
 
 var DEV = process.argv.indexOf('-dev') >= 0 ? true : false;
+
 var vhost = require('./vhost').vhost;
 var rrs = vhost.RewriteRule;
 var wwwroot = vhost.DocumentRoot || __dirname;
 var config = require('./config');
 var mime = require("./mime").types;
-var PORT = 80;
+var portParamIndex = process.argv.indexOf('-port');
+var PORT = portParamIndex >= 0 ? process.argv[1 + portParamIndex] : 80;
+console.log('port:'+PORT);
 
 var server = Http.createServer(function(request, response){
 	//console.log(request);
@@ -18,26 +21,33 @@ var server = Http.createServer(function(request, response){
 	//url rewrite
 	var rule, urlRule, reurlRule, flag;
 	
-	for(var i = 0, l = rrs.length; i < l; i++){
-		rule = rrs[i].split(/\s+/);
-		urlRule = new RegExp(rule[0], 'i');
-		reurlRule = rule[1];
-		flag = rule[2];
-		
-		if(urlRule.test(uri)){
-			if(/http:\/\//.test(reurlRule)){	//rewrite 到网络文件
-				uri = request.url.replace(urlRule, reurlRule);
-				var pathname = uri;
-				pathname = pathname.replace(/\.\./g, '');
-				returnNetFile(request, response, pathname, flag);
-			}else{								//rewrite 到本地文件
-				uri = uri.replace(urlRule, reurlRule);
-				var pathname = wwwroot + uri;
-				pathname = Path.normalize(pathname.replace(/\.\./g, ''));
-				returnLocalFile(request, response, pathname);
+	if(rrs.length){
+		for(var i = 0, l = rrs.length; i < l; i++){
+			rule = rrs[i].split(/\s+/);
+			urlRule = new RegExp(rule[0], 'i');
+			reurlRule = rule[1];
+			flag = rule[2];
+			
+			if(urlRule.test(uri)){
+				if(/http:\/\//.test(reurlRule)){	//rewrite 到网络文件
+					uri = request.url.replace(urlRule, reurlRule);
+					var pathname = uri;
+					pathname = pathname.replace(/\.\./g, '');
+					returnNetFile(request, response, pathname, flag);
+				}else{								//rewrite 到本地文件
+					uri = uri.replace(urlRule, reurlRule);
+					var pathname = wwwroot + uri;
+					pathname = Path.normalize(pathname.replace(/\.\./g, ''));
+					returnLocalFile(request, response, pathname);
+				}
+				break;
 			}
-			break;
 		}
+	}else{
+		uri = uri.replace(urlRule, reurlRule);
+		var pathname = wwwroot + uri;
+		pathname = Path.normalize(pathname.replace(/\.\./g, ''));
+		returnLocalFile(request, response, pathname);
 	}
 });
 server.listen(PORT);
@@ -105,8 +115,14 @@ function returnLocalFile(request, response, pathname){
 									response.end(err);
 								} else {
 									response.writeHead(200, "Ok");
-									console.log(200, pathname);
+									//console.log(200, pathname);
 									response.write(file, "binary");
+									/* if(/merge/.test(pathname)){
+										//console.log(file)
+										var reg = /[^'"]*?(?=ImportJavscript\.url\(['"]?)(?!=['"]?)\)/g;
+										var pathArr = file.match(reg);
+										console.log(pathArr,'***********');
+									} */
 									response.end();
 								}
 							});
