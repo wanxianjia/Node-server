@@ -1,12 +1,6 @@
 exports.vhost = {
-	DocumentRoot: 'E:\\workspace',
+	DocumentRoot: '/home/wan/workspace/Node-server/psd/',
 	RewriteRule: [
-		'^\\/css\\/app\\/search(.*)			/style_asc/css/app/search$1',
-		'^\\/js\\/app\\/search(.*)			/style_asc/js/app/search$1',
-		//train
-		'^\\/app\\/bp\\/css\\/train(.*)		/net_course/style_bp/css/train$1',
-		'^\\/app\\/bp\\/js\\/train(.*)		/net_course/style_bp/js/train$1',
-		//302
-		'^(.*)$								http://10.20.136.169$1 302'
+		
 	]
 }
